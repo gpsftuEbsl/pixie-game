@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>小精靈遊戲 - Terry Games</title>
+  <style>
+    body {
+      background-color: black;
+      color: yellow;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+    }
+
+    #gameCanvas {
+      background-color: #111;
+      margin-top: 20px;
+      border: 4px solid yellow;
+    }
+
+    #instructions {
+      padding: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: yellow;
+      color: black;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="instructions">
+    <h1>小精靈遊戲 - Terry Edition</h1>
+    <p>使用鍵盤方向鍵 ↑ ↓ ← → 控制小精靈移動</p>
+    <p>吃掉所有點點即可獲勝！</p>
+    <p>小心敵人（鬼魂）接觸會失敗！</p>
+    <button onclick="startGame()">開始遊戲</button>
+  </div>
+
+  <canvas id="gameCanvas" width="400" height="400" style="display: none;"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const gridSize = 20;
+    const rows = canvas.height / gridSize;
+    const cols = canvas.width / gridSize;
+
+    let pacman = { x: 1, y: 1 };
+    let ghost = { x: 18, y: 18 };
+    let dots = [];
+    let dx = 0, dy = 0;
+    let gameRunning = false;
+
+    function startGame() {
+      document.getElementById("instructions").style.display = "none";
+      canvas.style.display = "block";
+
+      pacman = { x: 1, y: 1 };
+      ghost = { x: 18, y: 18 };
+      dx = dy = 0;
+      gameRunning = true;
+
+      dots = [];
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (!(x === pacman.x && y === pacman.y) && !(x === ghost.x && y === ghost.y)) {
+            dots.push({ x, y });
+          }
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawRect(x, y, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x * gridSize, y * gridSize, gridSize - 2, gridSize - 2);
+    }
+
+    function moveGhost() {
+      const dirs = [
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 0, y: -1 }
+      ];
+      const dir = dirs[Math.floor(Math.random() * dirs.length)];
+      ghost.x = Math.max(0, Math.min(cols - 1, ghost.x + dir.x));
+      ghost.y = Math.max(0, Math.min(rows - 1, ghost.y + dir.y));
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 移動 Pac-Man
+      pacman.x += dx;
+      pacman.y += dy;
+
+      // 範圍限制
+      pacman.x = Math.max(0, Math.min(cols - 1, pacman.x));
+      pacman.y = Math.max(0, Math.min(rows - 1, pacman.y));
+
+      // 移動鬼魂
+      if (Math.random() < 0.3) moveGhost();
+
+      // 吃點點
+      dots = dots.filter(dot => !(dot.x === pacman.x && dot.y === pacman.y));
+
+      // 碰到鬼魂
+      if (pacman.x === ghost.x && pacman.y === ghost.y) {
+        gameRunning = false;
+        alert("Game Over！你被鬼魂抓到了！");
+        location.reload();
+        return;
+      }
+
+      // 勝利條件
+      if (dots.length === 0) {
+        gameRunning = false;
+        alert("你贏了！所有點點都吃光了！");
+        location.reload();
+        return;
+      }
+
+      // 繪製點點
+      dots.forEach(dot => drawRect(dot.x, dot.y, "white"));
+
+      // 繪製角色
+      drawRect(pacman.x, pacman.y, "yellow");
+      drawRect(ghost.x, ghost.y, "red");
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener("keydown", e => {
+      if (!gameRunning) return;
+      if (e.key === "ArrowUp") { dx = 0; dy = -1; }
+      if (e.key === "ArrowDown") { dx = 0; dy = 1; }
+      if (e.key === "ArrowLeft") { dx = -1; dy = 0; }
+      if (e.key === "ArrowRight") { dx = 1; dy = 0; }
+    });
+  </script>
+</body>
+</html>
