@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>小精靈遊戲 - Terry Games</title>
+  <title>小精靈（Pac-Man）遊戲</title>
   <style>
     body {
       background-color: black;
@@ -13,7 +13,7 @@
     }
 
     #gameCanvas {
-      background-color: #111;
+      background-color: #000;
       margin-top: 20px;
       border: 4px solid yellow;
     }
@@ -36,8 +36,8 @@
 <body>
 
   <div id="instructions">
-    <h1>小精靈遊戲 - Terry Edition</h1>
-    <p>使用鍵盤方向鍵 ↑ ↓ ← → 控制小精靈移動</p>
+    <h1>Pac-Man 遊戲</h1>
+    <p>使用鍵盤方向鍵 ↑ ↓ ← → 控制 Pac-Man 移動</p>
     <p>吃掉所有點點即可獲勝！</p>
     <p>小心敵人（鬼魂）接觸會失敗！</p>
     <button onclick="startGame()">開始遊戲</button>
@@ -82,7 +82,7 @@
 
     function drawRect(x, y, color) {
       ctx.fillStyle = color;
-      ctx.fillRect(x * gridSize, y * gridSize, gridSize - 2, gridSize - 2);
+      ctx.fillRect(x * gridSize + 2, y * gridSize + 2, gridSize - 4, gridSize - 4);
     }
 
     function moveGhost() {
