@@ -2,24 +2,33 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>小精靈（Pac-Man）遊戲</title>
+  <title>小精靈（Pac-Man）全螢幕迷宮</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       background-color: black;
       color: yellow;
       font-family: 'Arial', sans-serif;
       text-align: center;
-      margin: 0;
     }
 
     #gameCanvas {
+      display: block;
       background-color: #000;
-      margin-top: 20px;
       border: 4px solid yellow;
     }
 
     #instructions {
       padding: 20px;
+      position: absolute;
+      width: 100%;
+      top: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10;
     }
 
     button {
@@ -36,42 +45,50 @@
 <body>
 
   <div id="instructions">
-    <h1>Pac-Man 遊戲</h1>
-    <p>使用鍵盤方向鍵 ↑ ↓ ← → 控制 Pac-Man 移動</p>
-    <p>吃掉所有點點即可獲勝！</p>
-    <p>小心敵人（鬼魂）接觸會失敗！</p>
+    <h1>Pac-Man 全螢幕迷宮</h1>
+    <p>使用方向鍵 ↑ ↓ ← → 控制 Pac-Man 移動</p>
+    <p>吃掉所有點點即可獲勝，小心多隻鬼魂！</p>
     <button onclick="startGame()">開始遊戲</button>
   </div>
 
-  <canvas id="gameCanvas" width="400" height="400" style="display: none;"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    // 設為全螢幕尺寸
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     const gridSize = 20;
-    const rows = canvas.height / gridSize;
-    const cols = canvas.width / gridSize;
+    const rows = Math.floor(canvas.height / gridSize);
+    const cols = Math.floor(canvas.width / gridSize);
 
     let pacman = { x: 1, y: 1 };
-    let ghost = { x: 18, y: 18 };
+    let ghosts = [];
     let dots = [];
     let dx = 0, dy = 0;
     let gameRunning = false;
 
     function startGame() {
       document.getElementById("instructions").style.display = "none";
-      canvas.style.display = "block";
 
       pacman = { x: 1, y: 1 };
-      ghost = { x: 18, y: 18 };
       dx = dy = 0;
       gameRunning = true;
+
+      // 多隻鬼魂
+      ghosts = [
+        { x: cols - 2, y: rows - 2, color: "red" },
+        { x: cols - 3, y: 1, color: "blue" },
+        { x: 1, y: rows - 3, color: "green" }
+      ];
 
       dots = [];
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          if (!(x === pacman.x && y === pacman.y) && !(x === ghost.x && y === ghost.y)) {
+          if (!(x === pacman.x && y === pacman.y) && !ghosts.some(g => g.x === x && g.y === y)) {
             dots.push({ x, y });
           }
         }
@@ -85,7 +102,7 @@
       ctx.fillRect(x * gridSize + 2, y * gridSize + 2, gridSize - 4, gridSize - 4);
     }
 
-    function moveGhost() {
+    function moveGhost(ghost) {
       const dirs = [
         { x: 1, y: 0 },
         { x: -1, y: 0 },
@@ -105,26 +122,25 @@
       // 移動 Pac-Man
       pacman.x += dx;
       pacman.y += dy;
-
-      // 範圍限制
       pacman.x = Math.max(0, Math.min(cols - 1, pacman.x));
       pacman.y = Math.max(0, Math.min(rows - 1, pacman.y));
 
-      // 移動鬼魂
-      if (Math.random() < 0.3) moveGhost();
+      // 移動所有鬼魂
+      ghosts.forEach(ghost => {
+        if (Math.random() < 0.3) moveGhost(ghost);
+      });
 
       // 吃點點
       dots = dots.filter(dot => !(dot.x === pacman.x && dot.y === pacman.y));
 
-      // 碰到鬼魂
-      if (pacman.x === ghost.x && pacman.y === ghost.y) {
+      // 判斷撞到鬼魂
+      if (ghosts.some(g => g.x === pacman.x && g.y === pacman.y)) {
         gameRunning = false;
         alert("Game Over！你被鬼魂抓到了！");
         location.reload();
         return;
       }
 
-      // 勝利條件
       if (dots.length === 0) {
         gameRunning = false;
         alert("你贏了！所有點點都吃光了！");
@@ -132,12 +148,9 @@
         return;
       }
 
-      // 繪製點點
       dots.forEach(dot => drawRect(dot.x, dot.y, "white"));
-
-      // 繪製角色
       drawRect(pacman.x, pacman.y, "yellow");
-      drawRect(ghost.x, ghost.y, "red");
+      ghosts.forEach(g => drawRect(g.x, g.y, g.color));
 
       requestAnimationFrame(gameLoop);
     }
