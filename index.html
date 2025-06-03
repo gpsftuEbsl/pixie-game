@@ -7,27 +7,23 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
       overflow: hidden;
       background-color: black;
       color: yellow;
       font-family: 'Arial', sans-serif;
-      text-align: center;
-    }
-
-    #gameCanvas {
-      display: block;
-      background-color: #000;
-      border: 4px solid yellow;
     }
 
     #instructions {
-      padding: 20px;
       position: absolute;
-      width: 100%;
       top: 0;
-      background: rgba(0, 0, 0, 0.9);
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       z-index: 10;
     }
 
@@ -40,14 +36,17 @@
       cursor: pointer;
       margin-top: 10px;
     }
+
+    canvas {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
   <div id="instructions">
-    <h1>Pac-Man 全螢幕迷宮</h1>
-    <p>使用方向鍵 ↑ ↓ ← → 控制 Pac-Man 移動</p>
-    <p>吃掉所有點點即可獲勝，小心多隻鬼魂！</p>
+    <h1>Pac-Man 迷宮版</h1>
+    <p>使用 ↑ ↓ ← → 控制方向</p>
     <button onclick="startGame()">開始遊戲</button>
   </div>
 
@@ -57,38 +56,59 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // 設為全螢幕尺寸
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const gridSize = 30;
+    const map = [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,0,1],
+      [1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,0,1],
+      [1,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1],
+      [1,0,1,0,1,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1],
+      [1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+      [1,0,1,1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1],
+      [1,0,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0,1],
+      [1,1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,1],
+      [1,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1],
+      [1,0,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+      [1,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ];
 
-    const gridSize = 20;
-    const rows = Math.floor(canvas.height / gridSize);
-    const cols = Math.floor(canvas.width / gridSize);
-
+    const rows = map.length;
+    const cols = map[0].length;
     let pacman = { x: 1, y: 1 };
     let ghosts = [];
+    const ghostCount = 4;
     let dots = [];
+
     let dx = 0, dy = 0;
     let gameRunning = false;
 
     function startGame() {
       document.getElementById("instructions").style.display = "none";
+      canvas.width = cols * gridSize;
+      canvas.height = rows * gridSize;
 
       pacman = { x: 1, y: 1 };
+      ghosts = [];
+
+      for (let i = 0; i < ghostCount; i++) {
+        ghosts.push({
+          x: cols - 2 - i,
+          y: rows - 2,
+        });
+      }
+
       dx = dy = 0;
       gameRunning = true;
-
-      // 多隻鬼魂
-      ghosts = [
-        { x: cols - 2, y: rows - 2, color: "red" },
-        { x: cols - 3, y: 1, color: "blue" },
-        { x: 1, y: rows - 3, color: "green" }
-      ];
 
       dots = [];
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          if (!(x === pacman.x && y === pacman.y) && !ghosts.some(g => g.x === x && g.y === y)) {
+          const isWall = map[y][x] === 1;
+          const isGhostStart = ghosts.some(g => g.x === x && g.y === y);
+          if (!isWall && !(x === pacman.x && y === pacman.y) && !isGhostStart) {
             dots.push({ x, y });
           }
         }
@@ -97,21 +117,44 @@
       requestAnimationFrame(gameLoop);
     }
 
-    function drawRect(x, y, color) {
+    function drawTile(x, y, color) {
       ctx.fillStyle = color;
-      ctx.fillRect(x * gridSize + 2, y * gridSize + 2, gridSize - 4, gridSize - 4);
+      ctx.fillRect(
+        x * gridSize + 2,
+        y * gridSize + 2,
+        gridSize - 4,
+        gridSize - 4
+      );
     }
 
-    function moveGhost(ghost) {
-      const dirs = [
-        { x: 1, y: 0 },
-        { x: -1, y: 0 },
-        { x: 0, y: 1 },
-        { x: 0, y: -1 }
-      ];
-      const dir = dirs[Math.floor(Math.random() * dirs.length)];
-      ghost.x = Math.max(0, Math.min(cols - 1, ghost.x + dir.x));
-      ghost.y = Math.max(0, Math.min(rows - 1, ghost.y + dir.y));
+    function moveEntity(entity, dx, dy) {
+      const nx = entity.x + dx;
+      const ny = entity.y + dy;
+      if (map[ny] && map[ny][nx] === 0) {
+        entity.x = nx;
+        entity.y = ny;
+      }
+    }
+
+    function moveGhosts() {
+      for (let ghost of ghosts) {
+        const dirs = [
+          { x: 1, y: 0 },
+          { x: -1, y: 0 },
+          { x: 0, y: 1 },
+          { x: 0, y: -1 }
+        ];
+        const shuffled = dirs.sort(() => 0.5 - Math.random());
+        for (let dir of shuffled) {
+          const nx = ghost.x + dir.x;
+          const ny = ghost.y + dir.y;
+          if (map[ny] && map[ny][nx] === 0) {
+            ghost.x = nx;
+            ghost.y = ny;
+            break;
+          }
+        }
+      }
     }
 
     function gameLoop() {
@@ -119,38 +162,38 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 移動 Pac-Man
-      pacman.x += dx;
-      pacman.y += dy;
-      pacman.x = Math.max(0, Math.min(cols - 1, pacman.x));
-      pacman.y = Math.max(0, Math.min(rows - 1, pacman.y));
+      // 畫地圖
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if (map[y][x] === 1) {
+            drawTile(x, y, "blue");
+          }
+        }
+      }
 
-      // 移動所有鬼魂
-      ghosts.forEach(ghost => {
-        if (Math.random() < 0.3) moveGhost(ghost);
-      });
+      moveEntity(pacman, dx, dy);
+      moveGhosts();
 
-      // 吃點點
       dots = dots.filter(dot => !(dot.x === pacman.x && dot.y === pacman.y));
-
-      // 判斷撞到鬼魂
-      if (ghosts.some(g => g.x === pacman.x && g.y === pacman.y)) {
-        gameRunning = false;
-        alert("Game Over！你被鬼魂抓到了！");
-        location.reload();
-        return;
+      for (let ghost of ghosts) {
+        if (ghost.x === pacman.x && ghost.y === pacman.y) {
+          gameRunning = false;
+          alert("你被鬼魂吃掉了！");
+          location.reload();
+          return;
+        }
       }
 
       if (dots.length === 0) {
         gameRunning = false;
-        alert("你贏了！所有點點都吃光了！");
+        alert("你贏了！");
         location.reload();
         return;
       }
 
-      dots.forEach(dot => drawRect(dot.x, dot.y, "white"));
-      drawRect(pacman.x, pacman.y, "yellow");
-      ghosts.forEach(g => drawRect(g.x, g.y, g.color));
+      dots.forEach(dot => drawTile(dot.x, dot.y, "white"));
+      drawTile(pacman.x, pacman.y, "yellow");
+      ghosts.forEach(g => drawTile(g.x, g.y, "red"));
 
       requestAnimationFrame(gameLoop);
     }
